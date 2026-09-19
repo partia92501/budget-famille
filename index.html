@@ -798,6 +798,28 @@
     return data;
   }
 
+  function findMatchingPot(lineId, lineName){
+    // 1) déjà lié explicitement à cette ligne de dépense
+    var byId = pots.find(function(p){ return p.sourceExpenseId === lineId; });
+    if (byId) return byId;
+    // 2) une cagnotte créée à la main dont le nom correspond (ex: "Vacances d'été" / "Épargne vacances")
+    if (!lineName) return null;
+    var norm = normalizeName(lineName);
+    if (!norm) return null;
+    var candidates = pots.filter(function(p){ return !p.sourceExpenseId; });
+    var exact = candidates.find(function(p){
+      var pn = normalizeName(p.name);
+      return pn === norm || pn.indexOf(norm) !== -1 || norm.indexOf(pn) !== -1;
+    });
+    if (exact) return exact;
+    var lineWords = norm.split(/[^a-z0-9]+/).filter(function(w){ return w.length >= 4; });
+    if (!lineWords.length) return null;
+    return candidates.find(function(p){
+      var pWords = normalizeName(p.name).split(/[^a-z0-9]+/).filter(function(w){ return w.length >= 4; });
+      return pWords.some(function(w){ return lineWords.indexOf(w) !== -1; });
+    }) || null;
+  }
+
   function applyEpargneLinesToPots(month, epargneLines){
     var prevData = actualsCache[month];
     var prevLines = (prevData && prevData.epargneLines) || {};
@@ -807,6 +829,15 @@
       var delta = round2((line.actual||0) - prevApplied);
       line.applied = line.actual || 0;
       if (!delta) return Promise.resolve();
+
+      var matched = findMatchingPot(lineId, line.name);
+      if (matched){
+        var mRef = db.doc("pots/"+matched.id);
+        var mPatch = { balance: round2((Number(matched.balance)||0) + delta), updatedAt: Date.now() };
+        if (!matched.sourceExpenseId) mPatch.sourceExpenseId = lineId;
+        return mRef.update(mPatch);
+      }
+
       var potId = "epargne-line-" + lineId;
       var potRef = db.doc("pots/"+potId);
       return potRef.get().then(function(snap){
