@@ -114,6 +114,24 @@
   .flags-strip .sk-1{background:#fff;} .flags-strip .sk-2{background:#0B4EA2;} .flags-strip .sk-3{background:#EE1C25;}
   .flag-emoji{font-size:1.1em;line-height:1;vertical-align:-0.05em;margin-left:8px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15));}
 
+  /* guide */
+  .guide-intro{color:var(--ink-soft);font-size:.95rem;margin:0 0 4px;}
+  .guide-item{display:flex;gap:14px;padding:14px 0;}
+  .guide-item + .guide-item{border-top:1px dashed var(--line);}
+  .guide-num{
+    flex:none;width:30px;height:30px;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent-ink);
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Fraunces",serif;font-weight:700;font-size:.95rem;
+  }
+  .guide-body h3{margin:0 0 4px;font-size:1rem;font-family:"Work Sans",sans-serif;font-weight:700;}
+  .guide-body p{margin:0;color:var(--ink-soft);font-size:.9rem;line-height:1.5;}
+  .guide-body p + p{margin-top:6px;}
+  .guide-tip{
+    margin-top:14px;padding:12px 14px;border-radius:12px;
+    background:var(--accent-soft);color:var(--accent-ink);font-size:.88rem;line-height:1.5;
+  }
+
   h1,h2{font-family:"Fraunces", Georgia, serif;margin:0;text-wrap:balance;}
   h1{font-size:clamp(1.6rem,4vw,2.15rem);font-weight:700;letter-spacing:-.01em;}
   .eyebrow{font-size:.72rem;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--accent-ink);margin:0 0 4px;}
@@ -292,6 +310,7 @@
     <button type="button" class="tab-btn" data-tab="mensuel" role="tab">Mensuel réel</button>
     <button type="button" class="tab-btn" data-tab="epargne" role="tab">Épargne</button>
     <button type="button" class="tab-btn" data-tab="detail" role="tab">Détail dépenses</button>
+    <button type="button" class="tab-btn" data-tab="guide" role="tab">Guide 📖</button>
   </nav>
 
   <div class="tab-panel" data-panel="previsions" hidden>
@@ -409,6 +428,61 @@
         <h2>Détail des dépenses</h2>
       </div>
       <div id="categories"></div>
+    </section>
+  </div>
+
+  <div class="tab-panel" data-panel="guide" hidden>
+    <section class="card" aria-label="Guide d'utilisation">
+      <div class="card-head">
+        <div>
+          <h2>Comment ça marche 💛</h2>
+          <p class="sub">Petit guide pour s'y retrouver — coucou Monika !</p>
+        </div>
+      </div>
+      <p class="guide-intro">Cette page se met à jour en direct : ce que l'un de nous change, l'autre le voit apparaître tout de suite, pas besoin de s'envoyer de fichier.</p>
+
+      <div class="guide-item">
+        <div class="guide-num">1</div>
+        <div class="guide-body">
+          <h3>Prévisions</h3>
+          <p>C'est la page d'accueil. En haut : les 3 chiffres clés du mois (entrées, dépenses, reste). En dessous : les salaires et revenus, puis la répartition des dépenses par catégorie.</p>
+        </div>
+      </div>
+
+      <div class="guide-item">
+        <div class="guide-num">2</div>
+        <div class="guide-body">
+          <h3>Mensuel réel</h3>
+          <p>Chaque mois, on rentre ici les montants réels (à côté du "prévu") : ce qui est vraiment tombé sur le compte, ce qui a vraiment été dépensé.</p>
+          <p>Une fois que tout est à jour, on clique sur <b>« Enregistrer ce mois »</b>. Ça fait deux choses automatiquement : ça remplit les cagnottes d'épargne, et ça reporte le solde réel du mois (positif ou négatif) dans les entrées du mois suivant, sur la ligne « Report mois précédent ».</p>
+        </div>
+      </div>
+
+      <div class="guide-item">
+        <div class="guide-num">3</div>
+        <div class="guide-body">
+          <h3>Épargne</h3>
+          <p>Chaque ligne de dépense de la catégorie « Épargne » a sa propre cagnotte. Quand on enregistre le mois, le montant réel de cette ligne vient s'ajouter à sa cagnotte — pas besoin de le faire à la main.</p>
+        </div>
+      </div>
+
+      <div class="guide-item">
+        <div class="guide-num">4</div>
+        <div class="guide-body">
+          <h3>Détail dépenses</h3>
+          <p>Pour ajouter une nouvelle dépense (nom, catégorie, montant mensuel ou annuel) et voir le détail de chaque catégorie, avec possibilité de modifier ✎ ou supprimer ✕ une ligne.</p>
+        </div>
+      </div>
+
+      <div class="guide-item">
+        <div class="guide-num">5</div>
+        <div class="guide-body">
+          <h3>Une erreur, un doute ?</h3>
+          <p>Tu peux toujours modifier ou supprimer une ligne (icônes ✎ et ✕). Rien n'est figé : si un chiffre est faux, on peut le corriger et ré-enregistrer le mois, ça se remet à jour tout seul.</p>
+        </div>
+      </div>
+
+      <div class="guide-tip">💡 En cas de souci ou de question, demande à Manu — il peut corriger direct dans l'appli ou dans la base de données.</div>
     </section>
   </div>
 
