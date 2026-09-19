@@ -67,13 +67,52 @@
   *{box-sizing:border-box;}
   body{
     margin:0;
-    background:var(--bg);
     color:var(--ink);
     font-family:"Work Sans", system-ui, -apple-system, sans-serif;
     padding-inline:16px;
     padding-block:28px 60px;
+    min-height:100vh;
+    /* fond fun : touches drapeau français (bleu/blanc/rouge) + drapeau slovaque (blanc/bleu/rouge) */
+    background-color:var(--bg);
+    background-image:
+      radial-gradient(900px 520px at -8% -12%, rgba(0,85,164,.40), transparent 58%),
+      radial-gradient(760px 480px at 108% -8%, rgba(239,65,53,.34), transparent 55%),
+      radial-gradient(820px 520px at -10% 108%, rgba(11,78,162,.32), transparent 58%),
+      radial-gradient(760px 480px at 108% 106%, rgba(238,28,37,.30), transparent 55%),
+      radial-gradient(600px 400px at 50% 102%, rgba(255,255,255,.22), transparent 60%);
+    background-repeat:no-repeat;
+    background-attachment:fixed;
   }
-  .wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:22px;}
+  @media (max-width:640px){
+    body{background-attachment:scroll;} /* évite le lag de scroll sur mobile */
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) body{
+      background-image:
+        radial-gradient(900px 520px at -8% -12%, rgba(0,85,164,.30), transparent 58%),
+        radial-gradient(760px 480px at 108% -8%, rgba(239,65,53,.24), transparent 55%),
+        radial-gradient(820px 520px at -10% 108%, rgba(11,78,162,.24), transparent 58%),
+        radial-gradient(760px 480px at 108% 106%, rgba(238,28,37,.22), transparent 55%),
+        radial-gradient(600px 400px at 50% 102%, rgba(255,255,255,.06), transparent 60%);
+    }
+  }
+  :root[data-theme="dark"] body{
+    background-image:
+      radial-gradient(900px 520px at -8% -12%, rgba(0,85,164,.30), transparent 58%),
+      radial-gradient(760px 480px at 108% -8%, rgba(239,65,53,.24), transparent 55%),
+      radial-gradient(820px 520px at -10% 108%, rgba(11,78,162,.24), transparent 58%),
+      radial-gradient(760px 480px at 108% 106%, rgba(238,28,37,.22), transparent 55%),
+      radial-gradient(600px 400px at 50% 102%, rgba(255,255,255,.06), transparent 60%);
+  }
+  .wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:22px;position:relative;z-index:1;}
+  .flags-strip{
+    display:flex;height:6px;border-radius:99px;overflow:hidden;margin-bottom:10px;
+    box-shadow:var(--shadow);
+  }
+  .flags-strip span{flex:1;}
+  .flags-strip .fr-1{background:#0055A4;} .flags-strip .fr-2{background:#fff;} .flags-strip .fr-3{background:#EF4135;}
+  .flags-strip .sk-1{background:#fff;} .flags-strip .sk-2{background:#0B4EA2;} .flags-strip .sk-3{background:#EE1C25;}
+  .flag-emoji{font-size:1.1em;line-height:1;vertical-align:-0.05em;margin-left:8px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.15));}
 
   h1,h2{font-family:"Fraunces", Georgia, serif;margin:0;text-wrap:balance;}
   h1{font-size:clamp(1.6rem,4vw,2.15rem);font-weight:700;letter-spacing:-.01em;}
@@ -221,8 +260,12 @@
 
 <div id="login-screen">
   <div class="card">
+    <div class="flags-strip" aria-hidden="true">
+      <span class="fr-1"></span><span class="fr-2"></span><span class="fr-3"></span>
+      <span class="sk-1"></span><span class="sk-2"></span><span class="sk-3"></span>
+    </div>
     <p class="eyebrow">Budget Famille</p>
-    <h1 style="margin-bottom:10px;">Connexion</h1>
+    <h1 style="margin-bottom:10px;">Connexion <span class="flag-emoji">🇫🇷</span><span class="flag-emoji">🇸🇰</span></h1>
     <p class="lede" style="margin:0 0 18px;">Connecte-toi avec ton compte Google pour accéder au budget.</p>
     <button type="button" class="btn-google" id="login-btn">Se connecter avec Google</button>
     <p id="login-denied" hidden style="margin-top:14px;">Ce compte Google n'est pas autorisé à accéder à ce budget.</p>
@@ -233,8 +276,12 @@
 <div class="wrap" id="app-wrap" hidden>
   <div class="user-bar"><span id="user-email"></span><button type="button" id="logout-btn">Se déconnecter</button></div>
   <header>
+    <div class="flags-strip" aria-hidden="true">
+      <span class="fr-1"></span><span class="fr-2"></span><span class="fr-3"></span>
+      <span class="sk-1"></span><span class="sk-2"></span><span class="sk-3"></span>
+    </div>
     <p class="eyebrow">À la maison</p>
-    <h1>Budget Famille</h1>
+    <h1>Budget Famille <span class="flag-emoji">🇫🇷</span><span class="flag-emoji">🇸🇰</span></h1>
     <p class="lede">Toutes les dépenses mensuelles de la maison au même endroit — ajoutez-en une, la page se met à jour pour tout le monde qui l'ouvre.</p>
   </header>
 
