@@ -199,6 +199,13 @@
     .track-label{font-size:.78rem;}
     .track-plus-btn{width:22px;height:22px;}
   }
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);}
+  .tab-btn{background:none;border:none;padding:10px 14px;font-weight:600;font-size:.85rem;color:var(--ink-mute);border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer;white-space:nowrap;}
+  .tab-btn:hover{color:var(--ink-soft);}
+  .tab-btn.active{color:var(--ink);border-bottom-color:var(--accent);}
+  .tab-panel{display:flex;flex-direction:column;gap:22px;}
+  .tab-panel[hidden]{display:none;}
+
   #login-screen{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:24px;}
   #login-screen .card{max-width:380px;}
   .btn-google{display:inline-flex;align-items:center;gap:10px;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 18px;font-weight:600;font-size:.95rem;box-shadow:var(--shadow);cursor:pointer;}
@@ -238,109 +245,124 @@
     <div class="stat"><div class="label">Reste après calcul</div><div class="value" id="stat-balance">–</div></div>
   </section>
 
-  <section class="card" aria-label="Entrées et salaires">
-    <div class="card-head">
-      <div>
-        <h2>Entrées &amp; salaires</h2>
-        <p class="sub">Tout ce qui rentre chaque mois dans le budget</p>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Sections du budget">
+    <button type="button" class="tab-btn" data-tab="previsions" role="tab">Prévisions</button>
+    <button type="button" class="tab-btn" data-tab="mensuel" role="tab">Mensuel réel</button>
+    <button type="button" class="tab-btn" data-tab="epargne" role="tab">Épargne</button>
+    <button type="button" class="tab-btn" data-tab="detail" role="tab">Détail dépenses</button>
+  </nav>
+
+  <div class="tab-panel" data-panel="previsions" hidden>
+    <section class="card" aria-label="Entrées et salaires">
+      <div class="card-head">
+        <div>
+          <h2>Entrées &amp; salaires</h2>
+          <p class="sub">Tout ce qui rentre chaque mois dans le budget</p>
+        </div>
       </div>
-    </div>
-    <form class="add" id="income-form">
-      <label class="f">Nom
-        <input id="i-name" type="text" placeholder="Ex. Salaire principal" required maxlength="60">
-      </label>
-      <label class="f">Type
-        <select id="i-type" required></select>
-      </label>
-      <label class="f">Fréquence
-        <select id="i-freq">
-          <option value="monthly">Mensuelle</option>
-          <option value="annual">Annuelle</option>
-        </select>
-      </label>
-      <label class="f"><span id="i-amt-label">Montant €/mois</span>
-        <input id="i-amt" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0">
-      </label>
-      <button class="btn-add" id="income-add-btn" type="submit">Ajouter</button>
-    </form>
-    <div id="incomes" style="margin-top:8px;"></div>
-  </section>
+      <form class="add" id="income-form">
+        <label class="f">Nom
+          <input id="i-name" type="text" placeholder="Ex. Salaire principal" required maxlength="60">
+        </label>
+        <label class="f">Type
+          <select id="i-type" required></select>
+        </label>
+        <label class="f">Fréquence
+          <select id="i-freq">
+            <option value="monthly">Mensuelle</option>
+            <option value="annual">Annuelle</option>
+          </select>
+        </label>
+        <label class="f"><span id="i-amt-label">Montant €/mois</span>
+          <input id="i-amt" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0">
+        </label>
+        <button class="btn-add" id="income-add-btn" type="submit">Ajouter</button>
+      </form>
+      <div id="incomes" style="margin-top:8px;"></div>
+    </section>
 
-  <section class="card" aria-label="Répartition par catégorie">
-    <div class="card-head">
-      <div>
-        <h2>Répartition par catégorie</h2>
-        <p class="sub">Poids de chaque poste dans le budget total</p>
+    <section class="card" aria-label="Répartition par catégorie">
+      <div class="card-head">
+        <div>
+          <h2>Répartition par catégorie</h2>
+          <p class="sub">Poids de chaque poste dans le budget total</p>
+        </div>
       </div>
-    </div>
-    <div id="chart"></div>
-  </section>
+      <div id="chart"></div>
+    </section>
+  </div>
 
-  <section class="card" aria-label="Suivi mensuel prévu vs réel">
-    <div class="card-head">
-      <div>
-        <h2>Suivi mensuel</h2>
-        <p class="sub">Comparez le prévu et le réel, mois par mois</p>
+  <div class="tab-panel" data-panel="mensuel" hidden>
+    <section class="card" aria-label="Suivi mensuel prévu vs réel">
+      <div class="card-head">
+        <div>
+          <h2>Suivi mensuel</h2>
+          <p class="sub">Comparez le prévu et le réel, mois par mois</p>
+        </div>
+        <input type="month" id="track-month" aria-label="Mois suivi">
       </div>
-      <input type="month" id="track-month" aria-label="Mois suivi">
-    </div>
-    <div class="track-head-row"><span></span><span>Prévu</span><span>Réel</span><span>Ajout</span><span>Écart</span></div>
-    <div id="track-rows"></div>
-    <div class="track-totals" id="track-totals"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:12px;">
-      <button type="button" class="btn-add" id="track-save">Enregistrer ce mois</button>
-    </div>
-    <div id="track-history"></div>
-  </section>
-
-  <section class="card" aria-label="Cagnottes d'épargne">
-    <div class="card-head">
-      <div>
-        <h2>Épargne — mes cagnottes</h2>
-        <p class="sub">Ce que vous avez déjà mis de côté pour chaque objectif, en temps réel</p>
+      <div class="track-head-row"><span></span><span>Prévu</span><span>Réel</span><span>Ajout</span><span>Écart</span></div>
+      <div id="track-rows"></div>
+      <div class="track-totals" id="track-totals"></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px;">
+        <button type="button" class="btn-add" id="track-save">Enregistrer ce mois</button>
       </div>
-    </div>
-    <form class="add-pot" id="pot-form">
-      <label class="f">Nom
-        <input id="p-name" type="text" placeholder="Ex. Noël" required maxlength="40">
-      </label>
-      <label class="f">Objectif €<span style="text-transform:none;font-weight:400;"> (optionnel)</span>
-        <input id="p-target" type="number" min="0" step="0.01" placeholder="0">
-      </label>
-      <button class="btn-add" id="pot-add-btn" type="submit">Créer</button>
-    </form>
-    <div id="pots"></div>
-    <div class="pot-totals" id="pot-totals"></div>
-  </section>
+      <div id="track-history"></div>
+    </section>
+  </div>
 
-  <section class="card" aria-label="Ajouter une dépense">
-    <div class="card-head"><h2>Ajouter une dépense</h2></div>
-    <form class="add" id="add-form">
-      <label class="f">Nom
-        <input id="f-name" type="text" placeholder="Ex. Cantine scolaire" required maxlength="60">
-      </label>
-      <label class="f">Catégorie
-        <select id="f-cat" required></select>
-      </label>
-      <label class="f">Fréquence
-        <select id="f-freq">
-          <option value="monthly">Mensuelle</option>
-          <option value="annual">Annuelle</option>
-        </select>
-      </label>
-      <label class="f"><span id="f-amt-label">Montant €/mois</span>
-        <input id="f-amt" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0">
-      </label>
-      <button class="btn-add" id="add-btn" type="submit">Ajouter</button>
-    </form>
-  </section>
+  <div class="tab-panel" data-panel="epargne" hidden>
+    <section class="card" aria-label="Cagnottes d'épargne">
+      <div class="card-head">
+        <div>
+          <h2>Épargne — mes cagnottes</h2>
+          <p class="sub">Ce que vous avez déjà mis de côté pour chaque objectif, en temps réel</p>
+        </div>
+      </div>
+      <form class="add-pot" id="pot-form">
+        <label class="f">Nom
+          <input id="p-name" type="text" placeholder="Ex. Noël" required maxlength="40">
+        </label>
+        <label class="f">Objectif €<span style="text-transform:none;font-weight:400;"> (optionnel)</span>
+          <input id="p-target" type="number" min="0" step="0.01" placeholder="0">
+        </label>
+        <button class="btn-add" id="pot-add-btn" type="submit">Créer</button>
+      </form>
+      <div id="pots"></div>
+      <div class="pot-totals" id="pot-totals"></div>
+    </section>
+  </div>
 
-  <section class="card" aria-label="Détail par catégorie">
-    <div class="card-head">
-      <h2>Détail des dépenses</h2>
-    </div>
-    <div id="categories"></div>
-  </section>
+  <div class="tab-panel" data-panel="detail" hidden>
+    <section class="card" aria-label="Ajouter une dépense">
+      <div class="card-head"><h2>Ajouter une dépense</h2></div>
+      <form class="add" id="add-form">
+        <label class="f">Nom
+          <input id="f-name" type="text" placeholder="Ex. Cantine scolaire" required maxlength="60">
+        </label>
+        <label class="f">Catégorie
+          <select id="f-cat" required></select>
+        </label>
+        <label class="f">Fréquence
+          <select id="f-freq">
+            <option value="monthly">Mensuelle</option>
+            <option value="annual">Annuelle</option>
+          </select>
+        </label>
+        <label class="f"><span id="f-amt-label">Montant €/mois</span>
+          <input id="f-amt" type="number" min="0" step="0.01" inputmode="decimal" required placeholder="0">
+        </label>
+        <button class="btn-add" id="add-btn" type="submit">Ajouter</button>
+      </form>
+    </section>
+
+    <section class="card" aria-label="Détail par catégorie">
+      <div class="card-head">
+        <h2>Détail des dépenses</h2>
+      </div>
+      <div id="categories"></div>
+    </section>
+  </div>
 
   <footer>Budget partagé — accès réservé aux comptes Google autorisés.</footer>
 </div>
@@ -370,6 +392,16 @@
   INCOME_TYPES.forEach(function(t,i){ INCOME_INDEX[t.id]=i; });
 
   var POT_COLORS = ["var(--cat-8)","var(--cat-5)","var(--cat-7)","var(--cat-1)","var(--cat-4)","var(--cat-3)","var(--cat-2)","var(--cat-6)"];
+
+  var REPORT_INCOME_NAME = "Report mois précédent";
+  function normalizeName(s){
+    return String(s||"").trim().toLowerCase()
+      .normalize("NFD").replace(/[̀-ͯ]/g, "")
+      .replace(/\s+/g, " ");
+  }
+  function isReportIncome(inc){
+    return normalizeName(inc.name) === normalizeName(REPORT_INCOME_NAME);
+  }
 
   var SEED_POTS = [
     {name:"Noël",            target:600,  balance:0},
@@ -447,6 +479,21 @@
   }
 
   function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+
+  // ---------- tabs ----------
+  (function initTabs(){
+    var DEFAULT_TAB = "previsions";
+    var btns = document.querySelectorAll("#tabs .tab-btn");
+    var panels = document.querySelectorAll(".tab-panel");
+    function activate(tabId){
+      btns.forEach(function(b){ b.classList.toggle("active", b.dataset.tab === tabId); b.setAttribute("aria-selected", b.dataset.tab === tabId ? "true" : "false"); });
+      panels.forEach(function(p){ p.hidden = p.dataset.panel !== tabId; });
+    }
+    btns.forEach(function(b){
+      b.addEventListener("click", function(){ activate(b.dataset.tab); });
+    });
+    activate(DEFAULT_TAB);
+  })();
 
   // ---------- populate static bits ----------
   var catSelect = document.getElementById("f-cat");
@@ -656,15 +703,35 @@
     return Promise.all(ops);
   }
 
+  function updateReportIncome(resteActual){
+    var target = incomes.find(isReportIncome);
+    if (!target) return Promise.resolve();
+    var amt = round2(resteActual);
+    if (target.amount === amt) return Promise.resolve();
+    if (localMode){
+      target.amount = amt;
+      render();
+      return Promise.resolve();
+    }
+    return db.doc("incomes/"+target.id).update({amount: amt}).catch(function(err){
+      console.error("update report income failed", err);
+    });
+  }
+
   function saveTrack(){
     if (!canWrite) return;
     var month = document.getElementById("track-month").value || currentMonthKey();
     var data = collectTrackData(month);
+    var totalExpenseActual = Object.keys(data.expenseActual).reduce(function(a,k){
+      return a + (Number(data.expenseActual[k]) || 0);
+    }, 0);
+    var resteActualMonth = round2(data.incomeActual - totalExpenseActual);
     var btn = document.getElementById("track-save");
     btn.disabled = true;
     if (localMode){
       actualsCache[month] = data;
       renderHistory();
+      updateReportIncome(resteActualMonth);
       btn.disabled = false;
       return;
     }
@@ -673,6 +740,7 @@
     }).then(function(){
       actualsCache[month] = data;
       renderHistory();
+      return updateReportIncome(resteActualMonth);
     }).catch(function(err){
       console.error("track save failed", err);
       showBanner("Erreur en enregistrant le mois : " + err.message);
@@ -875,22 +943,25 @@
     row.className = "exp-line";
     row.dataset.id = inc.id;
 
-    var amtLabel = inc.frequency === "annual"
-      ? fmt2.format(inc.amount) + "/an"
-      : fmt2.format(inc.amount) + "/mois";
+    var isReport = isReportIncome(inc);
+    var amt = Number(inc.amount) || 0;
+    var amtLabel = (amt >= 0 ? fmt2.format(amt) : "− " + fmt2.format(Math.abs(amt))) + (inc.frequency === "annual" ? "/an" : "/mois");
+    var amtClass = isReport ? (amt >= 0 ? "bal-good" : "bal-bad") : "";
 
     row.innerHTML =
       '<span class="exp-name">'+escapeHtml(inc.name)+
         (inc.isExample ? '<span class="tag">exemple</span>' : '') +
-        '<br><span class="freq">'+(inc.frequency==="annual" ? "Annuel, lissé sur 12 mois" : "Mensuel")+'</span>' +
+        '<br><span class="freq">'+(isReport ? "Mis à jour automatiquement à la validation du mois précédent" : (inc.frequency==="annual" ? "Annuel, lissé sur 12 mois" : "Mensuel"))+'</span>' +
       '</span>' +
-      '<span class="exp-amt">'+amtLabel+'</span>' +
+      '<span class="exp-amt '+amtClass+'">'+amtLabel+'</span>' +
       '<span class="exp-actions">' +
-        '<button class="icon-btn" data-act="edit" title="Modifier" aria-label="Modifier">&#9998;</button>' +
+        (isReport ? '' : '<button class="icon-btn" data-act="edit" title="Modifier" aria-label="Modifier">&#9998;</button>') +
         '<button class="icon-btn" data-act="del" title="Supprimer" aria-label="Supprimer">&times;</button>' +
       '</span>';
 
-    row.querySelector('[data-act="edit"]').addEventListener("click", function(){ openEditIncome(row, inc); });
+    if (!isReport){
+      row.querySelector('[data-act="edit"]').addEventListener("click", function(){ openEditIncome(row, inc); });
+    }
     row.querySelector('[data-act="del"]').addEventListener("click", function(){ removeIncome(inc); });
     return row;
   }
