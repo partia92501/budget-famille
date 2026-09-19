@@ -287,12 +287,6 @@
 
   <div id="conn-banner" class="banner" hidden></div>
 
-  <section class="stats" id="stats" aria-label="Résumé du budget">
-    <div class="stat"><div class="label">Entrées mensuelles</div><div class="value" id="stat-income">–</div></div>
-    <div class="stat"><div class="label">Dépenses mensuelles</div><div class="value" id="stat-expense">–</div><div class="sub" id="stat-expense-sub" style="margin-top:2px;font-size:.72rem;"></div></div>
-    <div class="stat"><div class="label">Reste après calcul</div><div class="value" id="stat-balance">–</div></div>
-  </section>
-
   <nav class="tabs" id="tabs" role="tablist" aria-label="Sections du budget">
     <button type="button" class="tab-btn" data-tab="previsions" role="tab">Prévisions</button>
     <button type="button" class="tab-btn" data-tab="mensuel" role="tab">Mensuel réel</button>
@@ -301,6 +295,12 @@
   </nav>
 
   <div class="tab-panel" data-panel="previsions" hidden>
+    <section class="stats" id="stats" aria-label="Résumé du budget">
+      <div class="stat"><div class="label">Entrées mensuelles</div><div class="value" id="stat-income">–</div></div>
+      <div class="stat"><div class="label">Dépenses mensuelles</div><div class="value" id="stat-expense">–</div><div class="sub" id="stat-expense-sub" style="margin-top:2px;font-size:.72rem;"></div></div>
+      <div class="stat"><div class="label">Reste après calcul</div><div class="value" id="stat-balance">–</div></div>
+    </section>
+
     <section class="card" aria-label="Entrées et salaires">
       <div class="card-head">
         <div>
@@ -993,7 +993,7 @@
 
     var isReport = isReportIncome(inc);
     var amt = Number(inc.amount) || 0;
-    var amtLabel = (amt >= 0 ? fmt2.format(amt) : "− " + fmt2.format(Math.abs(amt))) + (inc.frequency === "annual" ? "/an" : "/mois");
+    var amtLabel = (amt >= 0 ? fmt2.format(amt) : "− " + fmt2.format(Math.abs(amt))) + (isReport ? "" : (inc.frequency === "annual" ? "/an" : "/mois"));
     var amtClass = isReport ? (amt >= 0 ? "bal-good" : "bal-bad") : "";
 
     row.innerHTML =
