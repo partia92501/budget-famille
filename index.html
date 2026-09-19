@@ -498,7 +498,7 @@
   // ---------- suivi mensuel (prévu vs réel) ----------
   function trackRowHtml(key, label, color, plannedVal, actualVal, isIncome){
     var dis = canWrite ? '' : 'disabled';
-    return '<div class="track-row" data-key="'+key+'">' +
+    return '<div class="track-row" data-key="'+key+'" data-line-name="'+escapeAttr(label)+'">' +
       '<span class="track-label"><span class="dot" style="background:'+color+'"></span>'+label+'</span>' +
       '<span class="track-fig">'+fmt.format(plannedVal)+'</span>' +
       '<input type="number" step="0.01" class="track-input" data-planned="'+plannedVal+'" data-income="'+(isIncome?1:0)+'" value="'+round2(actualVal)+'" '+dis+'>' +
@@ -543,8 +543,19 @@
       base = { incomePlanned: liveIncome, incomeActual: liveIncome, expensePlanned: liveExp, expenseActual: Object.assign({}, liveExp) };
     }
 
+    var epargneLines = existing && existing.epargneLines ? existing.epargneLines : {};
+
     var html = trackRowHtml("income", "Revenus", "var(--good)", base.incomePlanned, base.incomeActual, true);
     CATEGORIES.forEach(function(c){
+      if (c.id === "epargne"){
+        expenses.filter(function(e){ return e.category === "epargne"; }).forEach(function(item){
+          var linePlanned = monthlyEquiv(item);
+          var lineSaved = epargneLines[item.id];
+          var lineActual = lineSaved && lineSaved.actual != null ? lineSaved.actual : linePlanned;
+          html += trackRowHtml("epline:"+item.id, item.name, c.color, linePlanned, lineActual, false);
+        });
+        return;
+      }
       var planned = base.expensePlanned[c.id] || 0;
       var actual = base.expenseActual[c.id] != null ? base.expenseActual[c.id] : planned;
       html += trackRowHtml("exp:"+c.id, c.label, c.color, planned, actual, false);
@@ -593,7 +604,8 @@
   }
 
   function collectTrackData(month){
-    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, updatedAt: Date.now()};
+    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, epargneLines:{}, updatedAt: Date.now()};
+    var epargnePlannedSum = 0, epargneActualSum = 0;
     document.querySelectorAll('#track-rows .track-row').forEach(function(row){
       var key = row.dataset.key;
       var input = row.querySelector('input');
@@ -601,13 +613,47 @@
       var actual = parseFloat(input.value) || 0;
       if (input.dataset.income === "1"){
         data.incomePlanned = planned; data.incomeActual = actual;
+      } else if (key.indexOf("epline:") === 0){
+        var lineId = key.slice(7);
+        data.epargneLines[lineId] = { name: row.dataset.lineName || "", planned: planned, actual: actual };
+        epargnePlannedSum += planned;
+        epargneActualSum += actual;
       } else {
         var catId = key.slice(4);
         data.expensePlanned[catId] = planned;
         data.expenseActual[catId] = actual;
       }
     });
+    data.expensePlanned.epargne = round2(epargnePlannedSum);
+    data.expenseActual.epargne = round2(epargneActualSum);
     return data;
+  }
+
+  function applyEpargneLinesToPots(month, epargneLines){
+    var prevData = actualsCache[month];
+    var prevLines = (prevData && prevData.epargneLines) || {};
+    var ops = Object.keys(epargneLines).map(function(lineId){
+      var line = epargneLines[lineId];
+      var prevApplied = (prevLines[lineId] && prevLines[lineId].applied) || 0;
+      var delta = round2((line.actual||0) - prevApplied);
+      line.applied = line.actual || 0;
+      if (!delta) return Promise.resolve();
+      var potId = "epargne-line-" + lineId;
+      var potRef = db.doc("pots/"+potId);
+      return potRef.get().then(function(snap){
+        if (!snap.exists){
+          return potRef.set({
+            name: line.name || "Épargne", target: 0,
+            balance: round2(delta), createdAt: Date.now(), updatedAt: Date.now(), sourceExpenseId: lineId
+          });
+        }
+        var currentBalance = Number(snap.data().balance) || 0;
+        var patch = { balance: round2(currentBalance + delta), updatedAt: Date.now() };
+        if (line.name && snap.data().name !== line.name) patch.name = line.name;
+        return potRef.update(patch);
+      });
+    });
+    return Promise.all(ops);
   }
 
   function saveTrack(){
@@ -622,11 +668,14 @@
       btn.disabled = false;
       return;
     }
-    db.doc("actuals/"+month).set(data).then(function(){
+    applyEpargneLinesToPots(month, data.epargneLines).then(function(){
+      return db.doc("actuals/"+month).set(data);
+    }).then(function(){
       actualsCache[month] = data;
       renderHistory();
     }).catch(function(err){
       console.error("track save failed", err);
+      showBanner("Erreur en enregistrant le mois : " + err.message);
     }).finally(function(){ btn.disabled = false; });
   }
 
