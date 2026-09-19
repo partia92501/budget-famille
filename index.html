@@ -226,6 +226,7 @@
     <p class="lede" style="margin:0 0 18px;">Connecte-toi avec ton compte Google pour accéder au budget.</p>
     <button type="button" class="btn-google" id="login-btn">Se connecter avec Google</button>
     <p id="login-denied" hidden style="margin-top:14px;">Ce compte Google n'est pas autorisé à accéder à ce budget.</p>
+    <p id="login-error" hidden style="margin-top:14px;color:var(--bad);font-size:.85rem;"></p>
   </div>
 </div>
 
@@ -1342,11 +1343,28 @@
     var loginScreen = document.getElementById("login-screen");
     var appWrap = document.getElementById("app-wrap");
     var deniedMsg = document.getElementById("login-denied");
+    var errorMsg = document.getElementById("login-error");
+
+    var POPUP_FALLBACK_CODES = [
+      "auth/popup-blocked", "auth/popup-closed-by-user",
+      "auth/cancelled-popup-request", "auth/operation-not-supported-in-this-environment"
+    ];
 
     document.getElementById("login-btn").addEventListener("click", function(){
       deniedMsg.hidden = true;
+      errorMsg.hidden = true;
       auth.signInWithPopup(provider).catch(function(err){
-        console.error("sign-in failed", err);
+        console.error("sign-in popup failed", err);
+        if (POPUP_FALLBACK_CODES.indexOf(err.code) !== -1){
+          auth.signInWithRedirect(provider).catch(function(err2){
+            console.error("sign-in redirect failed", err2);
+            errorMsg.textContent = "Connexion impossible : " + (err2.message || err2.code || "erreur inconnue");
+            errorMsg.hidden = false;
+          });
+        } else {
+          errorMsg.textContent = "Connexion impossible : " + (err.message || err.code || "erreur inconnue");
+          errorMsg.hidden = false;
+        }
       });
     });
 
@@ -1371,6 +1389,12 @@
       appWrap.hidden = false;
       document.getElementById("user-email").textContent = fbUser.email;
       startApp();
+    });
+
+    auth.getRedirectResult().catch(function(err){
+      console.error("redirect result error", err);
+      errorMsg.textContent = "Connexion impossible : " + (err.message || err.code || "erreur inconnue");
+      errorMsg.hidden = false;
     });
   }
 
