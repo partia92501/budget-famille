@@ -697,18 +697,22 @@
     var month = monthInput.value;
     var existing = actualsCache[month];
 
+    // Le "prévu" reflète toujours le plan ACTUEL (salaires/dépenses tels qu'ils sont
+    // définis aujourd'hui dans Prévisions / Détail dépenses) — jamais une ancienne
+    // photo figée. Seul le "réel" reste l'historique propre à chaque mois validé.
+    var liveIncome = incomeTotal();
+    var liveExp = {};
+    CATEGORIES.forEach(function(c){ liveExp[c.id] = catTotal(c.id); });
+
     var base;
     if (existing){
       base = {
-        incomePlanned: existing.incomePlanned || 0,
-        incomeActual: existing.incomeActual != null ? existing.incomeActual : (existing.incomePlanned||0),
-        expensePlanned: existing.expensePlanned || {},
+        incomePlanned: liveIncome,
+        incomeActual: existing.incomeActual != null ? existing.incomeActual : liveIncome,
+        expensePlanned: liveExp,
         expenseActual: existing.expenseActual || {}
       };
     } else {
-      var liveIncome = incomeTotal();
-      var liveExp = {};
-      CATEGORIES.forEach(function(c){ liveExp[c.id] = catTotal(c.id); });
       base = { incomePlanned: liveIncome, incomeActual: liveIncome, expensePlanned: liveExp, expenseActual: Object.assign({}, liveExp) };
     }
 
