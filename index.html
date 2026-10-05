@@ -730,6 +730,10 @@
         return;
       }
       var planned = base.expensePlanned[c.id] || 0;
+      // Catégorie vide aujourd'hui (plus aucune ligne de dépense dedans) : on ne
+      // l'affiche plus du tout, pour éviter un ancien "réel" fantôme qui compterait
+      // en double une dépense déplacée vers une autre catégorie (ex: Épargne).
+      if (planned === 0 && !expenses.some(function(e){ return e.category === c.id; })) return;
       var actual = base.expenseActual[c.id] != null ? base.expenseActual[c.id] : planned;
       html += trackRowHtml("exp:"+c.id, c.label, c.color, planned, actual, false);
     });
