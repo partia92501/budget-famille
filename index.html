@@ -702,7 +702,14 @@
     // photo figée. Seul le "réel" reste l'historique propre à chaque mois validé.
     var liveIncome = incomeTotal();
     var liveExp = {};
-    CATEGORIES.forEach(function(c){ liveExp[c.id] = catTotal(c.id); });
+    CATEGORIES.forEach(function(c){
+      // Les lignes "trackSeparately" (ex: Herbe) sont affichées et suivies dans
+      // leur propre ligne (réel qui démarre à 0, incrémenté au fil de l'eau) —
+      // on les retire du total de la catégorie pour ne pas les compter deux fois.
+      var sepSum = expenses.filter(function(e){ return e.category===c.id && e.trackSeparately===true; })
+                            .reduce(function(a,e){ return a+monthlyEquiv(e); }, 0);
+      liveExp[c.id] = catTotal(c.id) - sepSum;
+    });
 
     var base;
     if (existing){
@@ -717,6 +724,7 @@
     }
 
     var epargneLines = existing && existing.epargneLines ? existing.epargneLines : {};
+    var trackedLines = existing && existing.trackedLines ? existing.trackedLines : {};
 
     var html = trackRowHtml("income", "Revenus", "var(--good)", base.incomePlanned, base.incomeActual, true);
     CATEGORIES.forEach(function(c){
@@ -729,11 +737,22 @@
         });
         return;
       }
+      // Lignes suivies séparément (ex: Herbe) : leur propre ligne, réel qui part
+      // de 0 par défaut (rien dépensé au début du mois) et qu'on incrémente avec
+      // le bouton "+" au fil des achats.
+      expenses.filter(function(e){ return e.category === c.id && e.trackSeparately === true; }).forEach(function(item){
+        var sepPlanned = monthlyEquiv(item);
+        var sepSaved = trackedLines[item.id];
+        var sepActual = sepSaved && sepSaved.actual != null ? sepSaved.actual : 0;
+        html += trackRowHtml("indline:"+item.id, item.name, c.color, sepPlanned, sepActual, false);
+      });
       var planned = base.expensePlanned[c.id] || 0;
-      // Catégorie vide aujourd'hui (plus aucune ligne de dépense dedans) : on ne
-      // l'affiche plus du tout, pour éviter un ancien "réel" fantôme qui compterait
-      // en double une dépense déplacée vers une autre catégorie (ex: Épargne).
-      if (planned === 0 && !expenses.some(function(e){ return e.category === c.id; })) return;
+      // Catégorie vide aujourd'hui (plus aucune ligne de dépense "normale" dedans,
+      // en dehors des lignes suivies séparément ci-dessus) : on ne l'affiche plus du
+      // tout, pour éviter un ancien "réel" fantôme qui compterait en double une
+      // dépense déplacée vers une autre catégorie (ex: Épargne).
+      var catHasOtherLines = expenses.some(function(e){ return e.category === c.id && e.trackSeparately !== true; });
+      if (planned === 0 && !catHasOtherLines) return;
       var actual = base.expenseActual[c.id] != null ? base.expenseActual[c.id] : planned;
       html += trackRowHtml("exp:"+c.id, c.label, c.color, planned, actual, false);
     });
@@ -781,7 +800,7 @@
   }
 
   function collectTrackData(month){
-    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, epargneLines:{}, updatedAt: Date.now()};
+    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, epargneLines:{}, trackedLines:{}, updatedAt: Date.now()};
     var epargnePlannedSum = 0, epargneActualSum = 0;
     document.querySelectorAll('#track-rows .track-row').forEach(function(row){
       var key = row.dataset.key;
@@ -795,6 +814,9 @@
         data.epargneLines[lineId] = { name: row.dataset.lineName || "", planned: planned, actual: actual };
         epargnePlannedSum += planned;
         epargneActualSum += actual;
+      } else if (key.indexOf("indline:") === 0){
+        var sepId = key.slice(8);
+        data.trackedLines[sepId] = { name: row.dataset.lineName || "", planned: planned, actual: actual };
       } else {
         var catId = key.slice(4);
         data.expensePlanned[catId] = planned;
@@ -804,6 +826,11 @@
     data.expensePlanned.epargne = round2(epargnePlannedSum);
     data.expenseActual.epargne = round2(epargneActualSum);
     return data;
+  }
+
+  function trackedLinesSum(d, field){
+    var tl = (d && d.trackedLines) || {};
+    return Object.keys(tl).reduce(function(a,k){ return a + (Number(tl[k][field]) || 0); }, 0);
   }
 
   function findMatchingPot(lineId, lineName){
@@ -885,7 +912,7 @@
     var data = collectTrackData(month);
     var totalExpenseActual = Object.keys(data.expenseActual).reduce(function(a,k){
       return a + (Number(data.expenseActual[k]) || 0);
-    }, 0);
+    }, 0) + trackedLinesSum(data, "actual");
     var resteActualMonth = round2(data.incomeActual - totalExpenseActual);
     var btn = document.getElementById("track-save");
     btn.disabled = true;
@@ -917,8 +944,8 @@
     }
     el.innerHTML = '<p class="sub" style="margin:14px 0 2px;">Historique</p>' + months.map(function(m){
       var d = actualsCache[m];
-      var ep = Object.values(d.expensePlanned||{}).reduce(function(a,v){return a+(Number(v)||0);},0);
-      var ea = Object.values(d.expenseActual||{}).reduce(function(a,v){return a+(Number(v)||0);},0);
+      var ep = Object.values(d.expensePlanned||{}).reduce(function(a,v){return a+(Number(v)||0);},0) + trackedLinesSum(d, "planned");
+      var ea = Object.values(d.expenseActual||{}).reduce(function(a,v){return a+(Number(v)||0);},0) + trackedLinesSum(d, "actual");
       var rp = (d.incomePlanned||0) - ep;
       var ra = (d.incomeActual||0) - ea;
       return '<div class="track-hist-row" data-month="'+m+'">' +
