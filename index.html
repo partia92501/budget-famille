@@ -221,6 +221,7 @@
   .track-row{display:grid;grid-template-columns:1.3fr .7fr .8fr .8fr .7fr;gap:6px;align-items:center;padding:7px 0;border-top:1px dashed var(--line);}
   .track-label{display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;min-width:0;}
   .track-fig{font-variant-numeric:tabular-nums;color:var(--ink-soft);font-size:.85rem;text-align:right;}
+  .track-fig.pink{color:#e0218a;font-weight:700;}
   .track-input{font-variant-numeric:tabular-nums;padding:5px 7px;font-size:.85rem;text-align:right;width:100%;}
   .track-plus-wrap{display:flex;gap:3px;align-items:center;justify-content:flex-end;}
   .track-plus{font-variant-numeric:tabular-nums;padding:5px 5px;font-size:.8rem;text-align:right;width:100%;min-width:0;}
@@ -665,11 +666,15 @@
   }
 
   // ---------- suivi mensuel (prévu vs réel) ----------
-  function trackRowHtml(key, label, color, plannedVal, actualVal, isIncome){
+  // Catégories "à mettre de côté" dès réception du revenu, mises en évidence en rose
+  // dans Suivi mensuel avec un sous-total dédié.
+  var PINK_CATS = ["logement","transport","enfants","loisirs","sante"];
+
+  function trackRowHtml(key, label, color, plannedVal, actualVal, isIncome, pink){
     var dis = canWrite ? '' : 'disabled';
-    return '<div class="track-row" data-key="'+key+'" data-line-name="'+escapeAttr(label)+'">' +
+    return '<div class="track-row" data-key="'+key+'" data-line-name="'+escapeAttr(label)+'" data-pink="'+(pink?1:0)+'">' +
       '<span class="track-label"><span class="dot" style="background:'+color+'"></span>'+label+'</span>' +
-      '<span class="track-fig">'+fmt.format(plannedVal)+'</span>' +
+      '<span class="track-fig'+(pink?' pink':'')+'">'+fmt.format(plannedVal)+'</span>' +
       '<input type="number" step="0.01" class="track-input" data-planned="'+plannedVal+'" data-income="'+(isIncome?1:0)+'" value="'+round2(actualVal)+'" '+dis+'>' +
       '<span class="track-plus-wrap">' +
         '<input type="number" step="0.01" class="track-plus" placeholder="+" '+dis+'>' +
@@ -754,7 +759,8 @@
       var catHasOtherLines = expenses.some(function(e){ return e.category === c.id && e.trackSeparately !== true; });
       if (planned === 0 && !catHasOtherLines) return;
       var actual = base.expenseActual[c.id] != null ? base.expenseActual[c.id] : planned;
-      html += trackRowHtml("exp:"+c.id, c.label, c.color, planned, actual, false);
+      var isPink = PINK_CATS.indexOf(c.id) !== -1;
+      html += trackRowHtml("exp:"+c.id, c.label, c.color, planned, actual, false, isPink);
     });
     document.getElementById("track-rows").innerHTML = html;
     document.querySelectorAll('#track-rows .track-input').forEach(function(inp){
@@ -773,7 +779,7 @@
 
   function updateTrackTotals(){
     var rows = document.querySelectorAll('#track-rows .track-row');
-    var incomePlanned=0, incomeActual=0, expPlanned=0, expActual=0;
+    var incomePlanned=0, incomeActual=0, expPlanned=0, expActual=0, pinkPlanned=0;
     rows.forEach(function(row){
       var input = row.querySelector('input');
       var planned = parseFloat(input.dataset.planned) || 0;
@@ -789,6 +795,7 @@
       }
       if (isIncome){ incomePlanned += planned; incomeActual += actual; }
       else { expPlanned += planned; expActual += actual; }
+      if (row.dataset.pink === "1") pinkPlanned += planned;
     });
     var restePlanned = incomePlanned - expPlanned;
     var resteActual = incomeActual - expActual;
@@ -796,7 +803,8 @@
     document.getElementById("track-totals").innerHTML =
       '<div class="track-total-row"><span>Reste prévu</span><b>'+fmt.format(restePlanned)+'</b></div>' +
       '<div class="track-total-row"><span>Reste réel</span><b class="'+(resteActual>=0?"bal-good":"bal-bad")+'">'+fmt.format(resteActual)+'</b></div>' +
-      '<div class="track-total-row"><span>Écart vs prévu</span><b class="'+(deltaReste>=0?"bal-good":"bal-bad")+'">'+(deltaReste>=0?"+":"−")+fmt.format(Math.abs(deltaReste))+'</b></div>';
+      '<div class="track-total-row"><span>Écart vs prévu</span><b class="'+(deltaReste>=0?"bal-good":"bal-bad")+'">'+(deltaReste>=0?"+":"−")+fmt.format(Math.abs(deltaReste))+'</b></div>' +
+      '<div class="track-total-row"><span>Sous-total prévu 🌸 (à mettre de côté)</span><b style="color:#e0218a;">'+fmt.format(pinkPlanned)+'</b></div>';
   }
 
   function collectTrackData(month){
