@@ -725,7 +725,12 @@
         expenseActual: existing.expenseActual || {}
       };
     } else {
-      base = { incomePlanned: liveIncome, incomeActual: liveIncome, expensePlanned: liveExp, expenseActual: Object.assign({}, liveExp) };
+      // Nouveau mois jamais enregistré : le réel démarre à 0 sur toutes les dépenses
+      // (comme Herbe) — on construit le réel au fil de l'eau avec le "+", on ne
+      // présume plus que tout le prévu a déjà été dépensé/mis de côté.
+      var zeroExp = {};
+      CATEGORIES.forEach(function(c){ zeroExp[c.id] = 0; });
+      base = { incomePlanned: liveIncome, incomeActual: liveIncome, expensePlanned: liveExp, expenseActual: zeroExp };
     }
 
     var epargneLines = existing && existing.epargneLines ? existing.epargneLines : {};
@@ -737,7 +742,10 @@
         expenses.filter(function(e){ return e.category === "epargne"; }).forEach(function(item){
           var linePlanned = monthlyEquiv(item);
           var lineSaved = epargneLines[item.id];
-          var lineActual = lineSaved && lineSaved.actual != null ? lineSaved.actual : linePlanned;
+          // Comme pour les autres catégories : démarre à 0 tant que rien n'a été mis
+          // de côté explicitement ce mois-ci (via le "+"), plutôt que de présumer
+          // que la cagnotte a déjà reçu son montant prévu.
+          var lineActual = lineSaved && lineSaved.actual != null ? lineSaved.actual : 0;
           html += trackRowHtml("epline:"+item.id, item.name, c.color, linePlanned, lineActual, false);
         });
         return;
