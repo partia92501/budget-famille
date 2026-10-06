@@ -739,8 +739,18 @@
 
     var epargneLines = existing && existing.epargneLines ? existing.epargneLines : {};
     var trackedLines = existing && existing.trackedLines ? existing.trackedLines : {};
+    var incomeLines = existing && existing.incomeLines ? existing.incomeLines : {};
 
-    var html = trackRowHtml("income", "Revenus", "var(--good)", base.incomePlanned, base.incomeActual, true);
+    // Chaque entrée (Salaire Manu, Salaire Monika, Pension Manu, Report mois
+    // précédent...) a sa propre ligne, avec son propre réel incrémentable au "+" —
+    // au lieu d'un seul total "Revenus" qui mélangeait tout.
+    var html = "";
+    incomes.forEach(function(inc){
+      var linePlanned = monthlyEquiv(inc);
+      var lineSaved = incomeLines[inc.id];
+      var lineActual = lineSaved && lineSaved.actual != null ? lineSaved.actual : linePlanned;
+      html += trackRowHtml("incline:"+inc.id, inc.name, "var(--good)", linePlanned, lineActual, true);
+    });
     CATEGORIES.forEach(function(c){
       if (c.id === "epargne"){
         expenses.filter(function(e){ return e.category === "epargne"; }).forEach(function(item){
@@ -820,15 +830,18 @@
   }
 
   function collectTrackData(month){
-    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, epargneLines:{}, trackedLines:{}, updatedAt: Date.now()};
+    var data = {month:month, incomePlanned:0, incomeActual:0, expensePlanned:{}, expenseActual:{}, epargneLines:{}, trackedLines:{}, incomeLines:{}, updatedAt: Date.now()};
     var epargnePlannedSum = 0, epargneActualSum = 0;
     document.querySelectorAll('#track-rows .track-row').forEach(function(row){
       var key = row.dataset.key;
       var input = row.querySelector('input');
       var planned = parseFloat(input.dataset.planned) || 0;
       var actual = parseFloat(input.value) || 0;
-      if (input.dataset.income === "1"){
-        data.incomePlanned = planned; data.incomeActual = actual;
+      if (key.indexOf("incline:") === 0){
+        var incId = key.slice(8);
+        data.incomeLines[incId] = { name: row.dataset.lineName || "", planned: planned, actual: actual };
+        data.incomePlanned += planned;
+        data.incomeActual += actual;
       } else if (key.indexOf("epline:") === 0){
         var lineId = key.slice(7);
         data.epargneLines[lineId] = { name: row.dataset.lineName || "", planned: planned, actual: actual };
@@ -845,6 +858,8 @@
     });
     data.expensePlanned.epargne = round2(epargnePlannedSum);
     data.expenseActual.epargne = round2(epargneActualSum);
+    data.incomePlanned = round2(data.incomePlanned);
+    data.incomeActual = round2(data.incomeActual);
     return data;
   }
 
