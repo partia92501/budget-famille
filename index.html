@@ -697,7 +697,75 @@
     realInput.value = round2((parseFloat(realInput.value) || 0) + val);
     plusInput.value = "";
     updateTrackTotals();
-    saveTrack();
+    if (localMode){ saveTrack(); return; }
+    applyIncrement(row, val);
+  }
+
+  // Écriture ciblée et atomique pour un "+" : ne touche QUE la ligne concernée
+  // (via FieldValue.increment), jamais tout le document du mois. Comme ça, si
+  // Monika ajoute son salaire pendant que Manu incrémente une autre ligne, aucun
+  // des deux n'écrase le travail de l'autre — contrairement à l'ancien
+  // comportement qui réenregistrait tout le mois tel que vu localement.
+  function applyIncrement(row, val){
+    var month = document.getElementById("track-month").value || currentMonthKey();
+    var key = row.dataset.key;
+    var name = row.dataset.lineName || "";
+    var input = row.querySelector('.track-input');
+    var planned = parseFloat(input.dataset.planned) || 0;
+    var inc = firebase.firestore.FieldValue.increment(round2(val));
+    var patch = { month: month, updatedAt: Date.now() };
+    var potDelta = null, potLineId = null, potLineName = name;
+
+    if (key.indexOf("incline:") === 0){
+      var incId = key.slice(8);
+      patch["incomeLines."+incId+".name"] = name;
+      patch["incomeLines."+incId+".planned"] = planned;
+      patch["incomeLines."+incId+".actual"] = inc;
+      patch.incomeActual = inc;
+    } else if (key.indexOf("epline:") === 0){
+      var epId = key.slice(7);
+      patch["epargneLines."+epId+".name"] = name;
+      patch["epargneLines."+epId+".planned"] = planned;
+      patch["epargneLines."+epId+".actual"] = inc;
+      patch["expenseActual.epargne"] = inc;
+      potDelta = val; potLineId = epId;
+    } else if (key.indexOf("indline:") === 0){
+      var indId = key.slice(8);
+      patch["trackedLines."+indId+".name"] = name;
+      patch["trackedLines."+indId+".planned"] = planned;
+      patch["trackedLines."+indId+".actual"] = inc;
+    } else {
+      var catId = key.slice(4);
+      patch["expenseActual."+catId] = inc;
+    }
+
+    db.doc("actuals/"+month).set(patch, {merge:true}).then(function(){
+      if (potDelta != null) return applyPotDelta(potLineId, potLineName, potDelta);
+    }).catch(function(err){
+      console.error("increment save failed", err);
+      showBanner("Erreur en enregistrant : " + err.message);
+    });
+  }
+
+  function applyPotDelta(lineId, lineName, delta){
+    if (!delta) return Promise.resolve();
+    var matched = findMatchingPot(lineId, lineName);
+    if (matched){
+      var patch = { balance: firebase.firestore.FieldValue.increment(round2(delta)), updatedAt: Date.now() };
+      if (!matched.sourceExpenseId) patch.sourceExpenseId = lineId;
+      return db.doc("pots/"+matched.id).update(patch);
+    }
+    var potId = "epargne-line-" + lineId;
+    var potRef = db.doc("pots/"+potId);
+    return potRef.get().then(function(snap){
+      if (!snap.exists){
+        return potRef.set({
+          name: lineName || "Épargne", target: 0,
+          balance: round2(delta), createdAt: Date.now(), updatedAt: Date.now(), sourceExpenseId: lineId
+        });
+      }
+      return potRef.update({ balance: firebase.firestore.FieldValue.increment(round2(delta)), updatedAt: Date.now() });
+    });
   }
 
   function renderTrack(){
@@ -1542,6 +1610,14 @@
       actualsCache = {};
       qs.docs.forEach(function(d){ actualsCache[d.id] = d.data(); });
       renderHistory();
+      // Rafraîchit Suivi mensuel avec les dernières valeurs dès qu'elles changent
+      // ailleurs (l'autre personne vient d'enregistrer) — sauf si on est justement
+      // en train de taper dedans, pour ne pas effacer une saisie en cours.
+      var monthInput = document.getElementById("track-month");
+      var active = document.activeElement;
+      if (monthInput && (!active || !active.closest('#track-rows'))){
+        renderTrack();
+      }
     }, function(err){
       console.error("actuals subscription error", err);
     });
